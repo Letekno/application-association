@@ -1,0 +1,13 @@
+{
+  "name": "assoc-manager",
+  "version": "1.0.0",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "express": "^4.19.2",
+    "sqlite3": "^5.1.7"
+  }
+}
