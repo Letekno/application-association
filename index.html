@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AssocManager Intégral</title>
+    <meta charset="utf-8">
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #eef2f5; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        input, select { padding: 8px; margin: 5px 0; width: 100%; box-sizing: border-box; }
+        button { background: #2c3e50; color: white; padding: 10px; border: none; border-radius: 4px; cursor: pointer; width: 100%; font-weight: bold; }
+        .solde { color: #27ae60; font-size: 24px; font-weight: bold; text-align: center; }
+    </style>
+</head>
+<body>
+    <h1 style="color:#2c3e50; text-align:center;">AssocManager - Solution Globale de Gestion</h1>
+    
+    <div class="card" style="margin-bottom:20px;">
+        <div class="solde">💰 SOLDE CAISSE EN TEMPS RÉEL : <span id="txtSolde">...</span> FCFA</div>
+    </div>
+
+    <div class="grid">
+        <div class="card">
+            <h2>1. Formulaire d'Auto-Inscription (Toutes Villes)</h2>
+            <input type="text" id="nom" placeholder="Nom de famille">
+            <input type="text" id="prenom" placeholder="Prénoms">
+            <input type="text" id="ville" placeholder="Ville de résidence">
+            <input type="text" id="tel" placeholder="Téléphone">
+            <input type="number" id="frais" placeholder="Montant Droits d'Adhésion (FCFA)">
+            <select id="famille"><option value="1">Famille Traoré</option><option value="2">Famille Kouadio</option><option value="3">Famille Diallo</option></select>
+            <input type="text" id="proches" placeholder="Membres de la famille proche (Ex: Conjoint, Enfants)">
+            <button onclick="enregistrer()">Valider mon adhésion (Confirmation obligatoire)</button>
+        </div>
+
+        <div class="card">
+            <h2>2. Paiement de Cotisation (Wave, Mobile Money, Visa)</h2>
+            <input type="number" id="payId" placeholder="Numéro ID du membre (Ex: 1)">
+            <input type="number" id="payMontant" placeholder="Montant du versement (FCFA)">
+            <select id="payType">
+                <option value="MENSUELLE">Cotisation Mensuelle</option>
+                <option value="ANNUELLE">Cotisation Annuelle</option>
+                <option value="EXCEPTIONNELLE">Cotisation Exceptionnelle</option>
+                <option value="PROJET">Cotisation Spéciale Projet</option>
+            </select>
+            <select id="payProjet"><option value="">-- Sélectionner Projet --</option><option value="1">Achat Terrain Siège</option><option value="2">Arbre de Noël</option></select>
+            <select id="payMode"><option value="WAVE">Wave Côte d'Ivoire</option><option value="ORANGE">Orange Money</option><option value="MTN">MTN MoMo</option><option value="VISA">Carte Visa</option></select>
+            <button style="background:#e67e22;" onclick="payer()">Payer en ligne de manière sécurisée</button>
+        </div>
+
+        <div class="card">
+            <h2>3. Moteur de Recherche d'un Membre</h2>
+            <input type="text" id="cle" placeholder="Saisir son Matricule ou son Nom">
+            <button style="background:#3498db;" onclick="rechercher()">Lancer la recherche financière</button>
+            <div id="resRecherche" style="margin-top:15px; font-weight:bold;"></div>
+        </div>
+
+        <div class="card">
+            <h2>4. Administration (Décaissements & Gestion Décès)</h2>
+            <input type="number" id="adminId" placeholder="Numéro ID du membre concerné">
+            <button style="background:#e74c3c; margin-bottom:15px;" onclick="declarerDeces()">🚨 Enregistrer le Décès (Solder & Verrouiller)</button>
+            <hr>
+            <h3>Enregistrer une Sortie de Caisse (Décaissement)</h3>
+            <input type="number" id="decMontant" placeholder="Montant de la sortie (FCFA)">
+            <input type="text" id="decMotif" placeholder="Motif de la sortie">
+            <button style="background:#7f8c8d;" onclick="decasser()">Valider le Décaissement</button>
+        </div>
+    </div>
+
+    <div id="recu" style="display:none; border:2px dashed #333; padding:20px; background:white; max-width:400px; margin:20px auto;">
+        <h3 style="text-align:center;">REÇU OFFICIEL DE COTISATION</h3>
+        <p><b>Matricule :</b> <span id="rMat"></span></p>
+        <p><b>Membre :</b> <span id="rNom"></span></p>
+        <p><b>Motif :</b> <span id="rMotif"></span></p>
+        <p><b>Montant :</b> <span id="rMnt"></span> FCFA</p>
+        <p><b>Mode :</b> <span id="rMod"></span></p>
+        <button style="background:#27ae60;" onclick="window.print()">Télécharger le reçu en PDF</button>
+    </div>
+
+    <script>
+        function rafraichirSolde() {
+            fetch('/api/comptabilite/solde').then(r => r.json()).then(d => document.getElementById('txtSolde').innerText = d.solde_temps_reel);
+        }
+        rafraichirSolde();
+
+        function enregistrer() {
+            if(!confirm("Demande de confirmation : Voulez-vous vraiment enregistrer ce membre ?")) return;
+            fetch('/api/membres/inscription', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    nom: document.getElementById('nom').value, prenom: document.getElementById('prenom').value,
+                    ville: document.getElementById('ville').value, telephone: document.getElementById('tel').value,
+                    grande_famille_id: document.getElementById('famille').value, frais_adhesion: document.getElementById('frais').value,
+                    famille_proches: document.getElementById('proches').value
+                })
+            }).then(r => r.json()).then(d => {
+                alert(d.message);
+                document.getElementById('rMat').innerText = d.matricule;
+                document.getElementById('rNom').innerText = document.getElementById('nom').value + " " + document.getElementById('prenom').value;
+                document.getElementById('rMotif').innerText = "FRAIS D'ADHESION INITIALE";
+                document.getElementById('rMnt').innerText = document.getElementById('frais').value;
+                document.getElementById('rMod').innerText = "ESPECES (Caisse)";
+                document.getElementById('recu').style.display = 'block';
+                rafraichirSolde();
+            });
+        }
+
+        function payer() {
+            fetch('/api/paiement/cotisation', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    membre_id: document.getElementById('payId').value, montant: document.getElementById('payMontant').value,
+                    type_cotisation: document.getElementById('payType').value, projet_id: document.getElementById('payProjet').value,
+                    mode_paiement: document.getElementById('payMode').value
+                })
+            }).then(r => r.json()).then(d => { alert(d.message); rafraichirSolde(); });
+        }
+
+        function rechercher() {
+            fetch('/api/membres/recherche?cle=' + document.getElementById('cle').value)
+            .then(r => r.json()).then(d => {
+                if(!d || d.message) return document.getElementById('resRecherche').innerHTML = "<span style='color:red;'>Aucun membre trouvé.</span>";
+                document.getElementById('resRecherche').innerHTML = `
+                    👤 ${d.nom} ${d.prenom} (${d.matricule}) - Statut: ${d.est_decede ? '🔴 DÉCÉDÉ/VERROUILLÉ' : '🟢 VIVANT'} <br>
+                    🏡 Grande Famille: ${d.nom_famille || 'Rattachée'} | Ville: ${d.ville}<br>
+                    🗓️ Dernière Cotisation: ${d.date_transaction || 'Aucune'} pour ${d.type_cotisation || 'N/A'}<br>
+                    💰 Montant: ${d.montant || 0} FCFA via ${d.mode_paiement || 'N/A'}
+                `;
+            });
+        }
+
+        function declarerDeces() {
+            if(!confirm("ATTENTION : Cette action va solder le compte et verrouiller définitivement les données. Continuer ?")) return;
+            fetch('/api/membres/deces/' + document.getElementById('adminId').value, { method: 'POST' })
+            .then(r => r.json()).then(d => { alert(d.message); rafraichirSolde(); });
+        }
+
+        function decasser() {
+            fetch('/api/comptabilite/decaissement', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ montant: document.getElementById('decMontant').value, motif: document.getElementById('decMotif').value, mode_paiement: 'ESPECES' })
+            }).then(r => r.json()).then(d => { alert(d.message); rafraichirSolde(); });
+        }
+    </script>
+</body>
+</html>
